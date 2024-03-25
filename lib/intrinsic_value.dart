@@ -13,35 +13,40 @@ class Report {
   }
 }
 
-void calculate() {
-  double growPercentPerYear = 10;
+void calculateIV({
+  required int currentYear,
+  required double cashInCurrentYear,
+  required int multiplierAvgPastYears,
+  required double cashOnHand,
+  required double growPercentPerYear,
+  int yearsToPredict = 10,
+  double discountPercentPerYear = 15,
+  double safetyMarginPercent = 30,
+  bool debug = false,
+}) {
   double growInDecimals = growPercentPerYear / 100 + 1;
-  double multiplierAvg = 10;
-  double discountPercentPerYear = 15;
   double discountInDecimals = discountPercentPerYear / 100 + 1;
-  double safetyMarginPercent = 30;
   double safetyMarginInDecimals = safetyMarginPercent / 100;
-  double cashOnHand = 67.15;
 
   final List<Report> freeCashNext = [];
-  int yearsToPredict = 10;
-  int currentYear = 2016;
-  double cashInCurrentYear = 53.50;
+  int currentYearProcessing = currentYear;
 
   for (int i = 0; i < yearsToPredict; i++) {
     cashInCurrentYear = double.parse(
       (cashInCurrentYear * growInDecimals).toStringAsFixed(2),
     );
-    currentYear++;
+    currentYearProcessing++;
     freeCashNext.add(
-      Report(currentYear, cashInCurrentYear),
+      Report(currentYearProcessing, cashInCurrentYear),
     );
   }
 
-  double terminalValue = freeCashNext.last.cash * multiplierAvg;
+  double terminalValue = double.parse(
+    (freeCashNext.last.cash * multiplierAvgPastYears).toStringAsFixed(2),
+  );
 
   final List<Report> freeCashNextDiscounted = [];
-  int currentYearDiscounted = 2017;
+  int currentYearDiscounted = currentYear + 1;
 
   for (int i = 0, len = freeCashNext.length; i < len; i++) {
     double discFreeCash = freeCashNext[i].cash / pow(discountInDecimals, i + 1);
@@ -61,30 +66,35 @@ void calculate() {
 
   double intrinsicValue =
       freeCashNextDiscounted.map((e) => e.cash).sum + terminalValueDiscounted;
-  double intrinsicValueAdded = intrinsicValue + cashOnHand;
+  intrinsicValue = double.parse(intrinsicValue.toStringAsFixed(2));
+  double intrinsicValueAdded = double.parse(
+    (intrinsicValue + cashOnHand).toStringAsFixed(2),
+  );
   double intrinsicValueSafe = double.parse(
     (intrinsicValueAdded - (intrinsicValueAdded * safetyMarginInDecimals))
         .toStringAsFixed(2),
   );
 
-  // Print
-  freeCashNext.forEach(
-    (e) {
-      print('${e.toString()} Billions\n');
-    },
-  );
-  print('Terminal Value = $terminalValue Billions');
+  if (debug) {
+// Print
+    freeCashNext.forEach(
+      (e) {
+        print('${e.toString()}\n');
+      },
+    );
+    print('Terminal Value = $terminalValue');
 
-  print('\n\n====DISCOUNTS===\n\n');
+    print('\n\n====DISCOUNTS===\n\n');
 
-  freeCashNextDiscounted.forEach(
-    (e) {
-      print('${e.toString()} Billions\n');
-    },
-  );
+    freeCashNextDiscounted.forEach(
+      (e) {
+        print('${e.toString()}\n');
+      },
+    );
+  }
 
-  print('Terminal value discounted = $terminalValueDiscounted Billions');
+  print('Terminal value discounted = $terminalValueDiscounted');
   print('Intrinsic Value = $intrinsicValue Billions');
-  print('Intrinsic Value plus cash on hand = $intrinsicValueAdded Billions');
-  print('Intrinsic Value with safety margin = $intrinsicValueSafe Billions');
+  print('Intrinsic Value plus cash on hand = $intrinsicValueAdded');
+  print('Intrinsic Value with safety margin = $intrinsicValueSafe');
 }
