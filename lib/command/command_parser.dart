@@ -10,7 +10,7 @@ part 'command_parser.g.dart';
 Either<CommandError, ArgParser> commandParser(CommandParserRef ref) =>
     Either.Do(
       ($) {
-        final argParser = ArgParser();
+        final argParser = ArgParser(allowTrailingOptions: false);
         argParser.addSeparator(
           "Usage: ${Command.iv.name} [options] | ${Command.ag.name} [options]",
         );
@@ -31,6 +31,10 @@ Either<CommandError, ArgParser> commandParser(CommandParserRef ref) =>
 Either<CommandError, ArgParser> _buildIvCommand() => Either.tryCatch(
       () {
         final ivCommand = ArgParser();
+
+        ivCommand.addSeparator('Usage: iv --stock="stock-config" [arguments]');
+        ivCommand.addSeparator('Available arguments:');
+
         ivCommand.addOption(
           'stock',
           abbr: 's',
@@ -70,6 +74,10 @@ Either<CommandError, ArgParser> _buildIvCommand() => Either.tryCatch(
 Either<CommandError, ArgParser> _buildAgCommand() => Either.tryCatch(
       () {
         final agCommand = ArgParser();
+        agCommand.addSeparator(
+          'Usage: ag --min={number} --max={number} [arguments]',
+        );
+        agCommand.addSeparator('Available arguments:');
         agCommand.addOption(
           'min',
           mandatory: true,

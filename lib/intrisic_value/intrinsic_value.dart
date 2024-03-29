@@ -1,41 +1,31 @@
+import 'dart:io';
 import 'dart:math';
+import 'package:args/args.dart';
 import 'package:collection/collection.dart';
-import 'package:fpdart/fpdart.dart';
+import 'package:fpdart/fpdart.dart' as fpdart;
 import 'package:intrinsic_value/intrisic_value/errors/intrinsic_value_errors.dart';
+import 'package:intrinsic_value/intrisic_value/models/intrinsic_value_model.dart';
 import 'package:intrinsic_value/intrisic_value/models/report.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'intrinsic_value.g.dart';
 
 @riverpod
-Either<IntrinsicValueError, double> calculateIntrinsicValue(
+fpdart.Either<IntrinsicValueError, double> calculateIntrinsicValue(
   CalculateIntrinsicValueRef ref, {
-  required int currentYear,
-  required double cashInCurrentYear,
-  required int multiplierAvgPastYears,
-  required double cashOnHand,
-  required double growPercentPerYear,
-  int yearsToPredict = 10,
-  double discountPercentPerYear = 15,
-  double safetyMarginPercent = 30,
+  required ArgResults commandResult,
   bool debug = false,
 }) =>
-    Either<IntrinsicValueError, double>.Do(
+    fpdart.Either<IntrinsicValueError, double>.Do(
       ($) {
-        final freeCashReports = $(
-          _getFreeCashReports(
-            currentYear: currentYear,
-            multiplierAvgPastYears: multiplierAvgPastYears,
-            cashInCurrentYear: cashInCurrentYear,
-            growPercentPerYear: growPercentPerYear,
-            yearsToPredict: yearsToPredict,
-          ),
-        );
+        final values = $(_parseCommandResult(commandResult));
+
+        final freeCashReports = $(_getFreeCashReports(values: values));
         final freeCashDiscountedReports = $(
           _getFreeCashReportsDiscounted(
-            currentYear: currentYear,
+            currentYear: values.currentYear,
             reports: freeCashReports,
-            discountPercentPerYear: discountPercentPerYear,
+            discountPercentPerYear: values.discountPercentPerYear,
           ),
         );
 
@@ -45,7 +35,7 @@ Either<IntrinsicValueError, double> calculateIntrinsicValue(
             print('${e.toString()}\n');
           }
           print(
-            'Terminal Value = ${freeCashReports.last.cash * multiplierAvgPastYears}',
+            'Terminal Value = ${freeCashReports.last.cash * values.multiplierAvgPastYears}',
           );
 
           print('\n\n====DISCOUNTS===\n\n');
@@ -57,34 +47,113 @@ Either<IntrinsicValueError, double> calculateIntrinsicValue(
 
         return $(
           _calculateIntrinsicValue(
-            cashOnHand: cashOnHand,
+            cashOnHand: values.cashOnHand,
             freeCashDiscountedReports: freeCashDiscountedReports,
             freeCashReports: freeCashReports,
-            multiplierAvgPastYears: multiplierAvgPastYears,
-            discountPercentPerYear: discountPercentPerYear,
-            safetyMarginPercent: safetyMarginPercent,
+            multiplierAvgPastYears: values.multiplierAvgPastYears,
+            discountPercentPerYear: values.discountPercentPerYear,
+            safetyMarginPercent: values.safetyMarginPercent,
           ),
         );
       },
     );
 
-Either<IntrinsicValueError, List<Report>> _getFreeCashReports({
-  required int currentYear,
-  required int multiplierAvgPastYears,
-  required double cashInCurrentYear,
-  required double growPercentPerYear,
-  int yearsToPredict = 10,
+fpdart.Either<IntrinsicValueError, IntrinsicValueModel> _parseCommandResult(
+  ArgResults argResults,
+) =>
+    fpdart.Either.tryCatch(
+      () {
+        // Getting options
+        final growPercentPerYear = fpdart.Option.tryCatch(
+          () => double.parse(argResults['growth']),
+        ).getOrElse(() => 10);
+
+        final yearsToPredict = fpdart.Option.tryCatch(
+          () => int.parse(argResults['years']),
+        ).getOrElse(() => 5);
+
+        final discountPercentPerYear = fpdart.Option.tryCatch(
+          () => double.parse(argResults['discount']),
+        ).getOrElse(() => 15);
+
+        final safetyMarginPercent = fpdart.Option.tryCatch(
+          () => double.parse(argResults['safety']),
+        ).getOrElse(() => 30);
+
+        final stockValues = _readStockFile(argResults['stock']).match(
+          (l) => throw l,
+          (fileLines) => fileLines.foldLeft(
+            <String, num>{},
+            (b, line) {
+              final lineParts = line.split('=');
+              return {
+                ...b,
+                lineParts.first.trim(): fpdart.Either.tryCatch(
+                  () => num.parse(lineParts.last.trim()),
+                  (_, __) => Exception(),
+                ).getOrElse((l) => throw l),
+              };
+            },
+          ),
+        );
+
+        final cashOnHand = fpdart.Option.fromNullable(
+          stockValues['cashOnHand'],
+        ).flatMap((t) => fpdart.some(t.toDouble()));
+
+        final cashInCurrentYear = fpdart.Option.fromNullable(
+          stockValues['cashInCurrentYear'],
+        ).flatMap((t) => fpdart.some(t.toDouble()));
+
+        final currentYear = fpdart.Option.fromNullable(
+          stockValues['currentYear'],
+        ).flatMap((t) => fpdart.some(t.toInt()));
+
+        final multiplierAvgPastYears = fpdart.Option.fromNullable(
+          stockValues['multiplierAvgPastYears'],
+        ).flatMap((t) => fpdart.some(t.toDouble()));
+
+        return IntrinsicValueModel(
+          growPercentPerYear: growPercentPerYear,
+          cashOnHand: cashOnHand.getOrElse(() => throw Exception()),
+          cashInCurrentYear: cashInCurrentYear.getOrElse(
+            () => throw Exception(),
+          ),
+          currentYear: currentYear.getOrElse(() => throw Exception()),
+          multiplierAvgPastYears: multiplierAvgPastYears.getOrElse(
+            () => throw Exception(),
+          ),
+          yearsToPredict: yearsToPredict,
+          discountPercentPerYear: discountPercentPerYear,
+          safetyMarginPercent: safetyMarginPercent,
+        );
+      },
+      (o, s) => IntrinsicValueParseError(message: 'Error parsing stock values'),
+    );
+
+fpdart.Either<IntrinsicValueError, List<String>> _readStockFile(String path) =>
+    fpdart.Either.tryCatch(
+      () => File(path).readAsLinesSync(),
+      (o, s) => IntrinsicValueStockFileError(
+        message: 'The stock file doesn\'t exist in the provided path.',
+      ),
+    );
+
+fpdart.Either<IntrinsicValueError, List<Report>> _getFreeCashReports({
+  required IntrinsicValueModel values,
 }) =>
-    Either.tryCatch(
-      () => List.generate(yearsToPredict, (i) => currentYear + i + 1)
-          .foldLeftWithIndex(
+    fpdart.Either.tryCatch(
+      () => List.generate(
+        values.yearsToPredict,
+        (i) => values.currentYear + i + 1,
+      ).foldLeftWithIndex(
         [],
         (reports, year, i) => reports
           ..add(
             Report(
               year,
-              (i == 0 ? cashInCurrentYear : reports.last.cash) *
-                  (growPercentPerYear / 100 + 1),
+              (i == 0 ? values.cashInCurrentYear : reports.last.cash) *
+                  (values.growPercentPerYear / 100 + 1),
             ),
           ),
       ),
@@ -93,12 +162,12 @@ Either<IntrinsicValueError, List<Report>> _getFreeCashReports({
       ),
     );
 
-Either<IntrinsicValueError, List<Report>> _getFreeCashReportsDiscounted({
+fpdart.Either<IntrinsicValueError, List<Report>> _getFreeCashReportsDiscounted({
   required int currentYear,
   required List<Report> reports,
   double discountPercentPerYear = 15,
 }) =>
-    Either.tryCatch(
+    fpdart.Either.tryCatch(
       () => reports.foldLeftWithIndex(
         [],
         (b, t, i) => b
@@ -114,15 +183,15 @@ Either<IntrinsicValueError, List<Report>> _getFreeCashReportsDiscounted({
       ),
     );
 
-Either<IntrinsicValueError, double> _calculateIntrinsicValue({
+fpdart.Either<IntrinsicValueError, double> _calculateIntrinsicValue({
   required List<Report> freeCashDiscountedReports,
   required List<Report> freeCashReports,
   required double cashOnHand,
-  required int multiplierAvgPastYears,
+  required double multiplierAvgPastYears,
   double safetyMarginPercent = 30,
   double discountPercentPerYear = 15,
 }) =>
-    Either.tryCatch(
+    fpdart.Either.tryCatch(
       () {
         final intrinsicValueAdded =
             freeCashDiscountedReports.map((e) => e.cash).sum +

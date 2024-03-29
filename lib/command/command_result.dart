@@ -1,9 +1,10 @@
 import 'package:args/args.dart';
-import 'package:fpdart/fpdart.dart';
+import 'package:fpdart/fpdart.dart' as fpdart;
 import 'package:intrinsic_value/annual_growth/annual_growth.dart';
 import 'package:intrinsic_value/command/enums/command.dart';
 import 'package:intrinsic_value/command/errors/command_errors.dart';
 import 'package:intrinsic_value/command/extensions/command_extension.dart';
+import 'package:intrinsic_value/intrisic_value/intrinsic_value.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'command_result.g.dart';
@@ -11,12 +12,12 @@ part 'command_result.g.dart';
 typedef CommandResultCall = void Function(Command command);
 
 @riverpod
-Either<CommandError, Function> commandResult(
+fpdart.Either<CommandError, Function> commandResult(
   CommandResultRef ref, {
   required ArgParser parser,
   required List<String> arguments,
 }) =>
-    Either.Do(
+    fpdart.Either.Do(
       ($) {
         final command = $(_buildCommand(parser: parser, arguments: arguments));
         final commandResult = $(
@@ -28,7 +29,15 @@ Either<CommandError, Function> commandResult(
         );
 
         return () => switch (command.name.command()) {
-              Command.iv => (),
+              Command.iv => ref
+                  .read(podCalculateIntrinsicValue(
+                    commandResult: commandResult,
+                    debug: true,
+                  ))
+                  .match(
+                    (l) => print(l.message),
+                    (r) => print('Intrinsic Value = $r'),
+                  ),
               Command.ag =>
                 ref.read(podCalculateAnualGrowth(commandResult)).match(
                       (l) => print(l.message),
@@ -39,32 +48,42 @@ Either<CommandError, Function> commandResult(
       },
     );
 
-Either<CommandError, ArgResults> _buildCommand({
+fpdart.Either<CommandError, ArgResults> _buildCommand({
   required ArgParser parser,
   required List<String> arguments,
 }) =>
-    Either.tryCatch(
+    fpdart.Either.tryCatch(
       () => parser.parse(arguments),
       (o, s) {
+        if (o is ArgParserException) {
+          return CommandErrorUsage(
+            message: switch (fpdart.Option.fromNullable(
+              parser.commands[o.commands.first],
+            )) {
+              fpdart.Some<ArgParser>(value: final command) => command.usage,
+              fpdart.None() => parser.usage,
+            },
+          );
+        }
         return CommandErrorUsage(message: parser.usage);
       },
     ).flatMap(
-      (a) => Either.fromNullable(
+      (a) => fpdart.Either.fromNullable(
         a.command,
         () => CommandErrorUsage(message: parser.usage),
       ),
     );
 
-Either<CommandError, ArgResults> _buildCommandResult({
+fpdart.Either<CommandError, ArgResults> _buildCommandResult({
   required ArgParser parser,
   required Command command,
   required List<String> arguments,
 }) =>
-    Either.fromNullable(
+    fpdart.Either.fromNullable(
       parser.commands[command.name],
       () => CommandErrorUsage(message: parser.usage),
     ).flatMap(
-      (p) => Either.tryCatch(
+      (p) => fpdart.Either.tryCatch(
         () => p.parse(arguments),
         (_, __) => CommandErrorUsage(message: p.usage),
       ),
