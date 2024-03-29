@@ -3,3 +3,7 @@
 .dart_tool/
 .history
 .vscode
+.DS_Store
+
+## Generated code
+*.g.dart
