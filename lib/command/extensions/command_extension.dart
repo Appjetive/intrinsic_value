@@ -3,11 +3,10 @@ import 'package:intrinsic_value/command/enums/command.dart';
 extension CommandString on String? {
   Command command() {
     switch (this) {
-      case 'iv':
-        return Command.iv;
       case 'ag':
         return Command.ag;
+      default:
+        return Command.iv;
     }
-    return Command.none;
   }
 }

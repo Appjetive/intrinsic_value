@@ -12,7 +12,7 @@ part 'command_result.g.dart';
 typedef CommandResultCall = void Function(Command command);
 
 @riverpod
-fpdart.Either<CommandError, Function> commandResult(
+fpdart.Either<CommandError, (Command, double)> commandResult(
   CommandResultRef ref, {
   required ArgParser parser,
   required List<String> arguments,
@@ -28,23 +28,25 @@ fpdart.Either<CommandError, Function> commandResult(
           ),
         );
 
-        return () => switch (command.name.command()) {
-              Command.iv => ref
-                  .read(podCalculateIntrinsicValue(
-                    commandResult: commandResult,
-                    debug: true,
-                  ))
-                  .match(
-                    (l) => print(l.message),
-                    (r) => print('Intrinsic Value = $r'),
-                  ),
-              Command.ag =>
-                ref.read(podCalculateAnualGrowth(commandResult)).match(
-                      (l) => print(l.message),
-                      (r) => print('Annual growth: %$r'),
+        return switch (command.name.command()) {
+          Command.iv => (
+              Command.iv,
+              ref
+                  .read(
+                    podCalculateIntrinsicValue(
+                      commandResult: commandResult,
+                      debug: true,
                     ),
-              Command.none => (),
-            };
+                  )
+                  .getOrElse((l) => throw l),
+            ),
+          Command.ag => (
+              Command.ag,
+              ref
+                  .read(podCalculateAnualGrowth(commandResult))
+                  .getOrElse((l) => throw l),
+            ),
+        };
       },
     );
 

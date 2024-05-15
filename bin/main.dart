@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:intrinsic_value/command/command_parser.dart';
 import 'package:intrinsic_value/command/command_result.dart';
+import 'package:intrinsic_value/command/enums/command.dart';
 import 'package:riverpod/riverpod.dart';
 
 final ref = ProviderContainer();
@@ -8,15 +9,20 @@ final ref = ProviderContainer();
 void main(List<String> args) {
   Either.tryCatch(
     () {
-      final runner = ref.read(podCommandParser).bind(
+      ref
+          .read(podCommandParser)
+          .bind(
             (parser) => ref.read(
               podCommandResult(parser: parser, arguments: args),
             ),
+          )
+          .fold(
+            (l) => print(l.message),
+            (r) => switch (r.$1) {
+              Command.iv => print('Intrinsic value: ${r.$2}'),
+              Command.ag => print('Annual growth: ${r.$2}'),
+            },
           );
-      runner.fold(
-        (l) => print(l.message),
-        (r) => r(),
-      );
     },
     (o, s) {
       print('Error generating commands');
