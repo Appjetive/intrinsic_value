@@ -22,13 +22,15 @@ fpdart.Either<AnnualGrowthError, double> calculateAnualGrowth(
             final years = $(r.$3);
 
             if (start == 0 || years == 0) {
-              throw Exception('Division by 0');
+              throw AnnualGrowthCalcError(message: 'Division by 0');
             }
 
             final growth = (pow(end / start, 1 / years) - 1) * 100;
             return double.parse(growth.toStringAsFixed(2));
           },
-        ).getOrElse(() => throw Exception('Error')),
+        ).getOrElse(
+          () => throw AnnualGrowthCalcError(message: 'Undefined error'),
+        ),
       ),
       (error, _) => (error is AnnualGrowthError)
           ? error
