@@ -13,7 +13,7 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -25,6 +25,6 @@ jobs:
       - name: Check code format
         run: dart format -o none --set-exit-if-changed .
       - name: Check Linting rules
-        run: dart analyze --no-pub
+        run: dart analyze
       - name: Run tests
         run: dart test
