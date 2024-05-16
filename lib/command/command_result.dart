@@ -16,6 +16,7 @@ fpdart.Either<CommandError, (Command, double)> commandResult(
   CommandResultRef ref, {
   required ArgParser parser,
   required List<String> arguments,
+  bool debug = false,
 }) =>
     fpdart.Either.Do(
       ($) {
@@ -35,7 +36,7 @@ fpdart.Either<CommandError, (Command, double)> commandResult(
                   .read(
                     podCalculateIntrinsicValue(
                       commandResult: commandResult,
-                      debug: true,
+                      debug: debug,
                     ),
                   )
                   .getOrElse((l) => throw l),
