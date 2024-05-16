@@ -1,4 +1,5 @@
-# Project Name
+# Intrinsic Value
+[![Lint and Tests Validation](https://github.com/Appjetive/intrinsic_value/actions/workflows/lint-tests-check.yml/badge.svg)](https://github.com/Appjetive/intrinsic_value/actions/workflows/lint-tests-check.yml)
 
 ## Description
 
