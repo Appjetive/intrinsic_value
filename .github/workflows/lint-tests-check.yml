@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  dart_version: "3.0.1"
+  dart_version: "3.5.1"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -20,8 +20,6 @@ jobs:
 
       - name: Install dependencies
         run: dart pub get
-      - name: Build runner
-        run: dart run build_runner build
       - name: Check code format
         run: dart format -o none --set-exit-if-changed .
       - name: Check Linting rules
