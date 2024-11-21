@@ -6,7 +6,22 @@ import 'package:fpdart/fpdart.dart';
 import 'package:intrinsic_value/models/intrinsic_value_model.dart';
 import 'package:intrinsic_value/models/report.dart';
 
+/// The `IntrinsicValue` class contains methods for calculating the intrinsic value of stocks
+/// based on various financial parameters. It uses functional programming concepts like
+/// `Either` for error handling to ensure robustness in financial calculations.
 class IntrinsicValue {
+  /// Calculates the intrinsic value of a stock using provided financial data.
+  ///
+  /// This method performs the following steps:
+  /// 1. Retrieves free cash flow reports for future years.
+  /// 2. Calculates discounted cash flows.
+  /// 3. Computes the intrinsic value based on these reports with applied safety margins.
+  ///
+  /// [args] - An [IntrinsicValueModel] containing all necessary parameters for the calculation.
+  /// [debug] - When true, prints intermediate calculations for debugging purposes.
+  ///
+  /// Returns an [Either] object which can be either an [Exception] or the calculated intrinsic value as a [double].
+
   static Either<Exception, double> calculateIntrinsicValue({
     required IntrinsicValueModel args,
     bool debug = false,
@@ -50,6 +65,15 @@ class IntrinsicValue {
           );
         },
       );
+
+  /// Parses command-line arguments into an [IntrinsicValueModel].
+  ///
+  /// This method reads arguments from [ArgResults], attempts to parse them into appropriate types,
+  /// and constructs an [IntrinsicValueModel]. It also reads additional stock data from a file.
+  ///
+  /// [argResults] - The parsed command line arguments.
+  ///
+  /// Returns an [Either] object which can be either an [Exception] or the [IntrinsicValueModel].
 
   static Either<Exception, IntrinsicValueModel> parseIvParams(
     ArgResults argResults,
@@ -124,6 +148,11 @@ class IntrinsicValue {
         (o, s) => Exception('Error parsing stock values'),
       );
 
+  /// Reads the stock data file at the given path.
+  ///
+  /// [path] - The file path for the stock data file.
+  ///
+  /// Returns an [Either] with an [Exception] if reading fails or a [List<String>] of file lines.
   static Either<Exception, List<String>> _readStockFile(String path) =>
       Either.tryCatch(
         () => File(path).readAsLinesSync(),
@@ -132,6 +161,11 @@ class IntrinsicValue {
         ),
       );
 
+  /// Generates free cash flow reports for the prediction period.
+  ///
+  /// [values] - Contains the necessary financial parameters.
+  ///
+  /// Returns a list of [Report] objects representing each year's cash flow.
   static Either<Exception, List<Report>> _getFreeCashReports({
     required IntrinsicValueModel values,
   }) =>
@@ -155,6 +189,13 @@ class IntrinsicValue {
         ),
       );
 
+  /// Computes discounted free cash flow reports.
+  ///
+  /// [currentYear] - The current year to start calculations from.
+  /// [reports] - List of [Report] objects representing undiscounted cash flows.
+  /// [discountPercentPerYear] - The annual discount rate to apply.
+  ///
+  /// Returns the discounted cash flow reports.
   static Either<Exception, List<Report>> _getFreeCashReportsDiscounted({
     required int currentYear,
     required List<Report> reports,
@@ -176,6 +217,16 @@ class IntrinsicValue {
         ),
       );
 
+  /// Calculates the intrinsic value from discounted cash flows and other financial metrics.
+  ///
+  /// [freeCashDiscountedReports] - Discounted cash flow reports.
+  /// [freeCashReports] - Original cash flow reports.
+  /// [cashOnHand] - Current cash reserves of the company.
+  /// [multiplierAvgPastYears] - A multiplier based on historical financial performance.
+  /// [safetyMarginPercent] - Percentage of safety margin to apply.
+  /// [discountPercentPerYear] - Discount rate used for cash flow discounting.
+  ///
+  /// Returns the calculated intrinsic value, adjusted for safety margin.
   static Either<Exception, double> _calculateIntrinsicValue({
     required List<Report> freeCashDiscountedReports,
     required List<Report> freeCashReports,

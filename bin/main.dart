@@ -6,30 +6,42 @@ import 'package:intrinsic_value/enums/command.dart';
 import 'package:intrinsic_value/extensions/command_extension.dart';
 import 'package:intrinsic_value/functions/intrinsic_value.dart';
 
+/// Flag to enable or disable debug mode for detailed error logging.
 final debug = true;
 
 void main(List<String> args) {
+  /// Wraps the main execution in a try-catch for error handling, using `Either` for functional error management.
   Either.tryCatch(
     () => Either<Exception, void>.Do(
       ($) {
+        // Parse command line arguments into a command parser object.
         final parser = $(CommandParser.getParser());
+
+        // Build command arguments from the parsed results.
         final commandArgs = $(
           CommandResult.buildCommandArgs(
             parser: parser,
             arguments: args,
           ),
         );
-        final command = commandArgs.name.command();
 
+        // Convert the command name string to an enum value.
+        final command = Either<Exception, String>.fromNullable(
+          commandArgs.name,
+          () => Exception('Error identifying the command'),
+        );
+
+        // Get the detailed result of the command execution.
         final commandResult = $(
           CommandResult.getCommandResult(
             parser: parser,
-            commandName: command.name,
+            commandName: $(command),
             arguments: args,
           ),
         );
 
-        final messageToPrint = switch (command) {
+        // Process the command and prepare the output message.
+        final messageToPrint = switch ($(command).command()) {
           Command.ag => AnnualGrowth.parseAgParams(commandResult)
               .bind(AnnualGrowth.calculateAnualGrowth)
               .fold(
@@ -47,14 +59,18 @@ void main(List<String> args) {
                 (l) => throw l,
                 (result) => 'Intrinsic value: $result',
               ),
+          Command.none => throw Exception('Command not implemented'),
         };
 
+        // Print the result to the console.
         return print(messageToPrint);
       },
     ),
     (o, s) {
+      // Display any errors that occurred during execution.
       print(o);
       if (debug) {
+        // If in debug mode, also print the stack trace for detailed debugging.
         print(StackTrace.current);
       }
     },

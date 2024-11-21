@@ -13,7 +13,7 @@ class CommandResult {
         () => parser.parse(arguments),
         (o, s) {
           if (o is ArgParserException) {
-            return Exception(
+            throw Exception(
               switch (Option.fromNullable(
                 parser.commands[o.commands.first],
               )) {
@@ -22,12 +22,12 @@ class CommandResult {
               },
             );
           }
-          return Exception(parser.usage);
+          throw Exception(parser.usage);
         },
       ).flatMap(
         (a) => Either.fromNullable(
           a.command,
-          () => Exception(parser.usage),
+          () => throw Exception(parser.usage),
         ),
       );
 
@@ -42,7 +42,7 @@ class CommandResult {
       ).flatMap(
         (p) => Either.tryCatch(
           () => p.parse(arguments),
-          (_, __) => Exception(p.usage),
+          (_, __) => throw Exception(p.usage),
         ),
       );
 }

@@ -1,12 +1,10 @@
 import 'package:intrinsic_value/enums/command.dart';
 
-extension CommandString on String? {
-  Command command() {
-    switch (this) {
-      case 'ag':
-        return Command.ag;
-      default:
-        return Command.iv;
-    }
-  }
+/// Extension to convert a nullable `String` to a `Command` enum value.
+extension CommandString on String {
+  Command command() => switch (this) {
+        'ag' => Command.ag,
+        'iv' => Command.iv,
+        String() => Command.none,
+      };
 }
