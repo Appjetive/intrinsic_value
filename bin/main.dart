@@ -17,7 +17,7 @@ void main(List<String> args) {
         // Parse command line arguments into a command parser object.
         final parser = $(CommandParser.getParser());
 
-        // Build command arguments from the parsed results.
+        // Build command arguments.
         final commandArgs = $(
           CommandResult.buildCommandArgs(
             parser: parser,
@@ -25,7 +25,7 @@ void main(List<String> args) {
           ),
         );
 
-        // Convert the command name string to an enum value.
+        // Get a command name string from the parsed args.
         final command = Either<Exception, String>.fromNullable(
           commandArgs.name,
           () => Exception('Error identifying the command'),
@@ -48,13 +48,16 @@ void main(List<String> args) {
                 (l) => throw l,
                 (result) => 'Annual growth: $result',
               ),
-          Command.iv => IntrinsicValue.parseIvParams(commandResult)
-              .bind(
-                (args) => IntrinsicValue.calculateIntrinsicValue(
-                  args: args,
-                  debug: debug,
-                ),
-              )
+          Command.iv => IntrinsicValue.readStockFile(commandResult['stock'])
+              .bind((stockValues) => IntrinsicValue.parseIvParams(
+                    argResults: commandResult,
+                    stockValues: stockValues,
+                  ).bind(
+                    (args) => IntrinsicValue.calculateIntrinsicValue(
+                      args: args,
+                      debug: debug,
+                    ),
+                  ))
               .fold(
                 (l) => throw l,
                 (result) => 'Intrinsic value: $result',

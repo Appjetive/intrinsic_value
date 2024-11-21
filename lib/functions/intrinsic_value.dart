@@ -75,9 +75,10 @@ class IntrinsicValue {
   ///
   /// Returns an [Either] object which can be either an [Exception] or the [IntrinsicValueModel].
 
-  static Either<Exception, IntrinsicValueModel> parseIvParams(
-    ArgResults argResults,
-  ) =>
+  static Either<Exception, IntrinsicValueModel> parseIvParams({
+    required ArgResults argResults,
+    required Map<String, num> stockValues,
+  }) =>
       Either.tryCatch(
         () {
           // Getting options
@@ -96,23 +97,6 @@ class IntrinsicValue {
           final safetyMarginPercent = Option.tryCatch(
             () => double.parse(argResults['safety']),
           ).getOrElse(() => 30);
-
-          final stockValues = _readStockFile(argResults['stock']).match(
-            (l) => throw l,
-            (fileLines) => fileLines.foldLeft(
-              <String, num>{},
-              (b, line) {
-                final lineParts = line.split('=');
-                return {
-                  ...b,
-                  lineParts.first.trim(): Either.tryCatch(
-                    () => num.parse(lineParts.last.trim()),
-                    (_, __) => Exception(),
-                  ).getOrElse((l) => throw l),
-                };
-              },
-            ),
-          );
 
           final cashOnHand = Option.fromNullable(
             stockValues['cashOnHand'],
@@ -153,9 +137,21 @@ class IntrinsicValue {
   /// [path] - The file path for the stock data file.
   ///
   /// Returns an [Either] with an [Exception] if reading fails or a [List<String>] of file lines.
-  static Either<Exception, List<String>> _readStockFile(String path) =>
+  static Either<Exception, Map<String, num>> readStockFile(String path) =>
       Either.tryCatch(
-        () => File(path).readAsLinesSync(),
+        () => File(path).readAsLinesSync().foldLeft(
+          <String, num>{},
+          (b, line) {
+            final lineParts = line.split('=');
+            return {
+              ...b,
+              lineParts.first.trim(): Either.tryCatch(
+                () => num.parse(lineParts.last.trim()),
+                (_, __) => Exception(),
+              ).getOrElse((l) => throw l),
+            };
+          },
+        ),
         (o, s) => Exception(
           'The stock file doesn\'t exist in the provided path.',
         ),
