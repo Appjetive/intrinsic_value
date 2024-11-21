@@ -1,119 +1,96 @@
-import 'package:fpdart/fpdart.dart';
-import 'package:intrinsic_value/annual_growth/errors/annual_growth_errors.dart';
-import 'package:intrinsic_value/command/command_parser.dart';
-import 'package:intrinsic_value/command/command_result.dart';
-import 'package:intrinsic_value/command/enums/command.dart';
+import 'package:intrinsic_value/enums/command.dart';
+import 'package:intrinsic_value/functions/annual_growth.dart';
+import 'package:intrinsic_value/functions/command_parser.dart';
+import 'package:intrinsic_value/functions/command_result.dart';
+import 'package:intrinsic_value/models/annual_growth_args.dart';
 import 'package:test/test.dart';
 
-import 'utilities.dart' show getContainer;
-
 void main() {
-  final container = getContainer();
-
-  group(
-    'Test AnnualGrowth functions',
+  final parserResult = CommandParser.getParser();
+  test(
+    'Parse Annual Growth params throws errors',
     () {
-      test(
-        'Annual growth calculator is throwing errors',
-        () {
-          expect(container.isSome(), true);
-
-          Either<AnnualGrowthError, (Command, double)>.tryCatch(
-            () => container.fold(
-              () => throw AnnualGrowthCalcError(
-                message: 'Error setting up the container',
-              ),
-              (ref) => ref
-                  .read(podCommandParser)
-                  .bind(
-                    (parser) => ref.read(
-                      podCommandResult(parser: parser, arguments: ["ag"]),
-                    ),
-                  )
-                  .getOrElse((l) => throw l),
+      final agParams = parserResult
+          .bind(
+            (parser) => CommandResult.getCommandResult(
+              parser: parser,
+              commandName: Command.ag.name,
+              arguments: ['ag'],
+            ).bind(
+              (argResult) => AnnualGrowth.parseAgParams(argResult),
             ),
-            (o, s) => o as AnnualGrowthError,
-          ).mapLeft(
-            (l) => expect(l, isA<AnnualGrowthCalcError>()),
+          )
+          .fold(
+            (l) => l,
+            (r) => r,
           );
-        },
+
+      expect(agParams, isA<Exception>());
+    },
+  );
+
+  test(
+    'Parse Annual Growth is OK',
+    () {
+      final agParams = parserResult
+          .bind(
+            (parser) => CommandResult.getCommandResult(
+              parser: parser,
+              commandName: Command.ag.name,
+              arguments: [
+                "ag",
+                "--min",
+                "0",
+                "--max",
+                "0",
+              ],
+            ).bind(
+              (argResult) => AnnualGrowth.parseAgParams(argResult),
+            ),
+          )
+          .fold(
+            (l) => l,
+            (r) => r,
+          );
+
+      expect(agParams, isA<AnnualGrowthArgs>());
+    },
+  );
+
+  test(
+    'Calculate annual growth in 0 years throws an error',
+    () {
+      final result = AnnualGrowth.calculateAnualGrowth(
+        AnnualGrowthArgs(
+          startPrice: 245,
+          finalPrice: 1456,
+          yearsToGrow: 0,
+        ),
+      ).fold(
+        (l) => l,
+        (r) => r,
       );
 
-      test(
-        'Annual growth 10%',
-        () {
-          expect(container.isSome(), true);
+      expect(result, isA<Exception>());
+    },
+  );
 
-          Either<AnnualGrowthError, (Command, double)>.tryCatch(
-            () => container.fold(
-              () => throw AnnualGrowthCalcError(
-                message: 'Error setting up the container',
-              ),
-              (ref) => ref
-                  .read(podCommandParser)
-                  .bind(
-                    (parser) => ref.read(
-                      podCommandResult(parser: parser, arguments: [
-                        "ag",
-                        "--min",
-                        "10",
-                        "--max",
-                        "11",
-                        "-y",
-                        "1",
-                      ]),
-                    ),
-                  )
-                  .getOrElse((l) => throw l),
-            ),
-            (o, s) => o as AnnualGrowthError,
-          ).fold(
-            (l) => expect(l, isA<(Command, double)>()),
-            (r) {
-              expect(r, isA<(Command, double)>());
-              expect(r.$2, 10);
-            },
-          );
-        },
+  test(
+    'Calculate annual growth 42.82% in 5 year is OK',
+    () {
+      final result = AnnualGrowth.calculateAnualGrowth(
+        AnnualGrowthArgs(
+          startPrice: 245,
+          finalPrice: 1456,
+          yearsToGrow: 5,
+        ),
+      ).fold(
+        (l) => l,
+        (r) => r,
       );
 
-      test(
-        'Annual growth 15% y/y for 5 years',
-        () {
-          expect(container.isSome(), true);
-
-          Either<AnnualGrowthError, (Command, double)>.tryCatch(
-            () => container.fold(
-              () => throw AnnualGrowthCalcError(
-                message: 'Error setting up the container',
-              ),
-              (ref) => ref
-                  .read(podCommandParser)
-                  .bind(
-                    (parser) => ref.read(
-                      podCommandResult(parser: parser, arguments: [
-                        "ag",
-                        "--min",
-                        "10",
-                        "--max",
-                        "20.11",
-                        "-y",
-                        "5",
-                      ]),
-                    ),
-                  )
-                  .getOrElse((l) => throw l),
-            ),
-            (o, s) => o as AnnualGrowthError,
-          ).fold(
-            (l) => expect(l, isA<(Command, double)>()),
-            (r) {
-              expect(r, isA<(Command, double)>());
-              expect(r.$2, 15);
-            },
-          );
-        },
-      );
+      expect(result, isA<double>());
+      expect(result, 42.82);
     },
   );
 }

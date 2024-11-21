@@ -7,3 +7,6 @@
 
 ## Generated code
 *.g.dart
+
+# FVM Version Cache
+.fvm/

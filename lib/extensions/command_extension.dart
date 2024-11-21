@@ -1,4 +1,4 @@
-import 'package:intrinsic_value/command/enums/command.dart';
+import 'package:intrinsic_value/enums/command.dart';
 
 extension CommandString on String? {
   Command command() {

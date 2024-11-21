@@ -1,34 +1,30 @@
 import 'package:args/args.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:intrinsic_value/command/enums/command.dart';
-import 'package:intrinsic_value/command/errors/command_errors.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:intrinsic_value/enums/command.dart';
 
-part 'command_parser.g.dart';
+class CommandParser {
+  static Either<Exception, ArgParser> getParser() => Either.Do(
+        ($) {
+          final argParser = ArgParser(allowTrailingOptions: false);
+          argParser.addSeparator(
+            "Usage: ${Command.iv.name} [options] | ${Command.ag.name} [options]",
+          );
 
-@riverpod
-Either<CommandError, ArgParser> commandParser(CommandParserRef ref) =>
-    Either.Do(
-      ($) {
-        final argParser = ArgParser(allowTrailingOptions: false);
-        argParser.addSeparator(
-          "Usage: ${Command.iv.name} [options] | ${Command.ag.name} [options]",
-        );
+          argParser.addCommand(
+            Command.iv.name,
+            $(_buildIvCommand()),
+          );
 
-        argParser.addCommand(
-          Command.iv.name,
-          $(_buildIvCommand()),
-        );
+          argParser.addCommand(
+            Command.ag.name,
+            $(_buildAgCommand()),
+          );
+          return argParser;
+        },
+      );
+}
 
-        argParser.addCommand(
-          Command.ag.name,
-          $(_buildAgCommand()),
-        );
-        return argParser;
-      },
-    );
-
-Either<CommandError, ArgParser> _buildIvCommand() => Either.tryCatch(
+Either<Exception, ArgParser> _buildIvCommand() => Either.tryCatch(
       () {
         final ivCommand = ArgParser();
 
@@ -68,10 +64,10 @@ Either<CommandError, ArgParser> _buildIvCommand() => Either.tryCatch(
         );
         return ivCommand;
       },
-      (o, s) => CommandIntrinsicValueError(),
+      (o, s) => Exception('Error building the IV command'),
     );
 
-Either<CommandError, ArgParser> _buildAgCommand() => Either.tryCatch(
+Either<Exception, ArgParser> _buildAgCommand() => Either.tryCatch(
       () {
         final agCommand = ArgParser();
         agCommand.addSeparator(
@@ -96,5 +92,5 @@ Either<CommandError, ArgParser> _buildAgCommand() => Either.tryCatch(
         );
         return agCommand;
       },
-      (o, s) => CommandAnnualGrowthError(),
+      (o, s) => Exception('Error building the AG command'),
     );
