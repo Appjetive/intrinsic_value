@@ -49,6 +49,6 @@ class AnnualGrowth {
           finalPrice: double.parse(argResults['max']),
           yearsToGrow: int.parse(argResults['years']),
         ),
-        (o, s) => throw o,
+        (o, s) => Exception(o),
       );
 }

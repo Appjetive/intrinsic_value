@@ -7,7 +7,7 @@ import 'package:intrinsic_value/extensions/command_extension.dart';
 import 'package:intrinsic_value/functions/intrinsic_value.dart';
 
 /// Flag to enable or disable debug mode for detailed error logging.
-final debug = true;
+final debug = false;
 
 void main(List<String> args) {
   /// Wraps the main execution in a try-catch for error handling, using `Either` for functional error management.
@@ -22,6 +22,11 @@ void main(List<String> args) {
           CommandResult.buildCommandArgs(
             parser: parser,
             arguments: args,
+          ).flatMap(
+            (a) => Either.fromNullable(
+              a.command,
+              () => throw Exception(parser.usage),
+            ),
           ),
         );
 

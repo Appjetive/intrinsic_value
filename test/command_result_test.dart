@@ -1,4 +1,5 @@
 import 'package:args/args.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:intrinsic_value/enums/command.dart';
 import 'package:intrinsic_value/functions/command_parser.dart';
 import 'package:intrinsic_value/functions/command_result.dart';
@@ -15,6 +16,11 @@ void main() {
             (parser) => CommandResult.buildCommandArgs(
               parser: parser,
               arguments: [],
+            ).flatMap(
+              (a) => Either.fromNullable(
+                a.command,
+                () => Exception(parser.usage),
+              ),
             ),
           )
           .fold(

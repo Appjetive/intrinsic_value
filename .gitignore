@@ -12,3 +12,5 @@
 .fvm/
 
 stocks
+coverage
+build

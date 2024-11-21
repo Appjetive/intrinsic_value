@@ -24,11 +24,6 @@ class CommandResult {
           }
           throw Exception(parser.usage);
         },
-      ).flatMap(
-        (a) => Either.fromNullable(
-          a.command,
-          () => throw Exception(parser.usage),
-        ),
       );
 
   static Either<Exception, ArgResults> getCommandResult({
