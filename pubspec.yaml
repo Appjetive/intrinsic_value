@@ -1,7 +1,7 @@
 name: intrinsic_value
-description: A sample command-line application.
+description: This Dart project offers tools for financial analysis.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/Appjetive/intrinsic_value
 
 environment:
   sdk: ^3.0.1
