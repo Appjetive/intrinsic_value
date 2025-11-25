@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+
 import 'package:args/args.dart' show ArgResults;
 import 'package:collection/collection.dart';
 import 'package:fpdart/fpdart.dart';
@@ -53,7 +54,7 @@ class IntrinsicValue {
             }
           }
 
-          return $(
+          final intrinsic = $(
             _calculateIntrinsicValue(
               cashOnHand: args.cashOnHand,
               freeCashDiscountedReports: freeCashDiscountedReports,
@@ -63,6 +64,14 @@ class IntrinsicValue {
               safetyMarginPercent: args.safetyMarginPercent,
             ),
           );
+
+          if (args.sharesOutstanding > 1) {
+            print(
+              'Fair value: ${(intrinsic / args.sharesOutstanding).toStringAsFixed(2)}',
+            );
+          }
+
+          return intrinsic;
         },
       );
 
@@ -114,6 +123,10 @@ class IntrinsicValue {
             stockValues['multiplierAvgPastYears'],
           ).flatMap((t) => some(t.toDouble()));
 
+          final sharesOutstanding = Option.fromNullable(
+            stockValues['sharesOutstanding'],
+          ).flatMap((t) => some(t.toDouble()));
+
           return IntrinsicValueModel(
             growPercentPerYear: growPercentPerYear,
             cashOnHand: cashOnHand.getOrElse(() => throw Exception()),
@@ -127,6 +140,7 @@ class IntrinsicValue {
             yearsToPredict: yearsToPredict,
             discountPercentPerYear: discountPercentPerYear,
             safetyMarginPercent: safetyMarginPercent,
+            sharesOutstanding: sharesOutstanding.getOrElse(() => 1),
           );
         },
         (o, s) => Exception('Error parsing stock values'),
@@ -248,7 +262,7 @@ class IntrinsicValue {
           return double.parse(
             (intrinsicValueAdded -
                     (intrinsicValueAdded * (safetyMarginPercent / 100)))
-                .toStringAsFixed(2),
+                .toString(),
           );
         },
         (o, s) => Exception(

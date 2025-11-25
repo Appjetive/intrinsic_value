@@ -8,6 +8,7 @@ class IntrinsicValueModel {
     required this.yearsToPredict,
     required this.discountPercentPerYear,
     required this.safetyMarginPercent,
+    this.sharesOutstanding = 1,
   });
 
   final int currentYear;
@@ -18,4 +19,5 @@ class IntrinsicValueModel {
   final int yearsToPredict;
   final double discountPercentPerYear;
   final double safetyMarginPercent;
+  final double sharesOutstanding;
 }
